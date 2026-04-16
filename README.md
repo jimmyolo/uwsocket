@@ -1,21 +1,18 @@
-# @jimmyolo/u-wsocket
 
-## Installation
+## Repo
+- Source: `jimmyolo/u-wsocket`
+- Distribution: `jimmyolo/uwsocket` (artifacts)
+
+### Installation
 
 ```bash
-npm install jimmyolo/uwsocket#v2.1.3
+npm install jimmyolo/uwsocket#v2.1.4
 ```
 
 ```json
 {
   "dependencies": {
-    "@jimmyolo/u-wsocket": "github:jimmyolo/uwsocket#v2.1.3"
+    "@jimmyolo/u-wsocket": "github:jimmyolo/uwsocket#v2.1.4"
   }
 }
 ```
-
-## Package Contents
-- `dist/index.js` - CommonJS entry point
-- `dist/index.mjs` - ES Module entry point
-- `dist/index.d.ts` - TypeScript definitions
-- `package.json` - Package metadata
