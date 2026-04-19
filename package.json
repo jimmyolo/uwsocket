@@ -1,6 +1,6 @@
 {
   "name": "@jimmyolo/u-wsocket",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "☄️ WebSocket server, based on μWebSockets.js",
   "engines": {
     "node": ">=22 <23 || >=24 <25"
@@ -20,10 +20,12 @@
     }
   },
   "scripts": {
+    "prepare": "npx husky",
     "test": "PORT=8888 node tests",
     "build": "node build.js",
     "clean": "rm -rf build dist",
-    "release": "npx release-it --verbose"
+    "release": "npx release-it --verbose",
+    "release:dry": "npm run release -- --dry"
   },
   "repository": {
     "type": "git",
@@ -31,12 +33,12 @@
   },
   "optionalDependencies": {
     "bufferutil": "^4.1.0",
-    "ultimate-ws": "^2.0.8",
-    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.63.0"
+    "ultimate-ws": "^2.0.9",
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.64.0"
   },
   "dependencies": {
     "tseep": "^1.3.1",
     "ws": "^8.20.0",
-    "@jimmyolo/uws.js": "github:jimmyolo/uws.js#semver:v20.63.0-alma.1"
+    "@jimmyolo/uws.js": "github:jimmyolo/uws.js#semver:v20.64.0-alma.1"
   }
 }
