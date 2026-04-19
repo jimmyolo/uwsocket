@@ -25,7 +25,7 @@
     "build": "node build.js",
     "clean": "rm -rf build dist",
     "release": "npx release-it --verbose",
-    "release:dry": "npm run release -- --dry"
+    "release:dry": "npm run release -- --dry-run"
   },
   "repository": {
     "type": "git",
