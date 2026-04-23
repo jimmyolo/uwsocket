@@ -1,0 +1,291 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const uWS = require("uWebSockets.js");
+const uWS = require("@jimmyolo/uws.js");
+const { EventEmitter } = require("tseep");
+const IncomingMessage = require("./request.js");
+const WebSocket = require("./websocket.js");
+const { CLOSED } = require("ws");
+
+module.exports = class WebSocketServer extends EventEmitter {
+    constructor(options = {}, callback) {
+        super();
+        if(options.noServer) {
+            throw new Error("noServer is not supported. Read documentation for how to properly setup WS server with custom http server.");
+        }
+        if(!options.server && !options.port) {
+            throw new Error("server or port is required");
+        }
+        this.options = options;
+        this.listenCalled = false;
+        this.clientData = {};
+        if(!options.path) {
+            options.path = "/*";
+        }
+        if(!options?.uwsOptions) {
+            options.uwsOptions = {};
+        }
+        if(typeof options.clientTracking === 'undefined') {
+            options.clientTracking = true;
+        }
+        if(typeof options.autoPong === 'undefined') {
+            options.autoPong = true;
+        }
+        if(typeof options.maxPayload === 'undefined') {
+            options.maxPayload = 104857600; // 100mb
+        }
+        if(typeof options.WebSocket === 'undefined') {
+            options.WebSocket = WebSocket;
+        }
+        if(typeof options.allowSynchronousEvents === 'undefined') {
+            options.allowSynchronousEvents = true;
+        }
+        if(typeof options.closeOnBackpressureLimit === 'undefined') {
+            options.closeOnBackpressureLimit = false;
+        }
+
+        if(options.clientTracking) {
+            this.clients = new Set();
+        }
+
+        if(!options.server) {
+            if(options.uwsOptions.key_file_name && options.uwsOptions.cert_file_name) {
+                this.uwsApp = uWS.SSLApp(options.uwsOptions);
+                this.ssl = true;
+            } else {
+                this.uwsApp = uWS.App(options.uwsOptions);
+                this.ssl = false;
+            }
+            process.nextTick(() => this.listen(options.port, callback));
+        } else {
+            this.uwsApp = options.server.uwsApp ?? options.server;
+        }
+        this.createHandler();
+    }
+
+    createHandler() {
+        this.uwsApp.ws(this.options.path, {
+            sendPingsAutomatically: this.options.autoPong,
+            maxPayloadLength: this.options.maxPayload,
+            maxBackpressure: this.options.maxBackpressure ?? this.options.maxPayload,
+            idleTimeout: this.options.idleTimeout ?? 120,
+            maxLifetime: this.options.maxLifetime ?? 0,
+            closeOnBackpressureLimit: this.options.closeOnBackpressureLimit,
+            compression: typeof this.options.perMessageDeflate !== 'number' && this.options.perMessageDeflate ? 
+                (uWS.DEDICATED_COMPRESSOR_4KB | uWS.DEDICATED_DECOMPRESSOR) : this.options.perMessageDeflate,
+            upgrade: async (res, req, context) => {
+                const headers = [];
+                const msg = new IncomingMessage(this, req, res);
+
+                const secWebSocketKey = req.getHeader('sec-websocket-key');
+                const secWebSocketProtocol = req.getHeader('sec-websocket-protocol');
+                const secWebSocketExtensions = req.getHeader('sec-websocket-extensions');
+
+                res.onAborted(() => {
+                    msg.finished = true;
+                });
+
+                if(!this.shouldHandle(msg)) {
+                    return res.writeStatus("400 Bad Request").end();
+                }
+
+                if(this.options.verifyClient) {
+                    if(this.options.verifyClient.length === 1) {
+                        const result = this.options.verifyClient({
+                            origin: req.getHeader('origin'),
+                            req: msg,
+                            secure: this.ssl,
+                        });
+                        if(!result) {
+                            return res.writeStatus("401 Unauthorized").end();
+                        }
+                    } else {
+                        const result = await new Promise((resolve, reject) => {
+                            this.options.verifyClient({
+                                origin: req.getHeader('origin'),
+                                req: msg,
+                                secure: this.ssl,
+                            }, (result, code, name, headers = {}) => {
+                                if(msg.finished) {
+                                    return resolve(false);
+                                }
+                                if(!result) {
+                                    res.cork(() => {
+                                        res.writeStatus(`${code} ${name}`);
+                                        for(const header in headers) {
+                                            res.writeHeader(header, headers[header]);
+                                        }
+                                        res.end();
+                                    });
+                                    return resolve(false);
+                                }
+                                resolve(true);
+                            });
+                        });
+                        if(!result) {
+                            return;
+                        }
+                    }
+                }
+
+                let onOpen;
+                if(this.options.handleUpgrade) {
+                    const result = await this.options.handleUpgrade(msg);
+                    if(result === false) {
+                        return;
+                    }
+                    if(typeof result === 'function') {
+                        onOpen = result;
+                    }
+                }
+
+                this.emit("headers", headers, msg);
+                res.cork(() => {
+                    if(headers.length || this.options.handleProtocols) {
+                        res.writeStatus("101 Switching Protocols");
+                    }
+                    if(headers.length) {
+                        for(const header of headers) {
+                            const [name, value] = header.split(": ");
+                            res.writeHeader(name, value);
+                        }
+                    }
+                    let protocol;
+                    if(this.options.handleProtocols) {
+                        const protocols = new Set(secWebSocketProtocol.split(","));
+                        protocol = this.options.handleProtocols(protocols, msg);
+                    }
+                    res.upgrade(
+                        { req: msg, onOpen },
+                        secWebSocketKey,
+                        protocol ?? secWebSocketProtocol,
+                        secWebSocketExtensions,
+                        context
+                    );
+                });
+            },
+            open: (ws) => {
+                ws.client = new this.options.WebSocket(ws, ws.req, this);
+                if(this.clients) this.clients.add(ws.client);
+                if(ws.onOpen) {
+                    ws.onOpen(ws.client, ws.req);
+                } else {
+                    this.emit("connection", ws.client, ws.req);
+                }
+            },
+            close: (ws, code, message) => {
+                ws.client.readyState = CLOSED;
+                if(this.clients) this.clients.delete(ws.client);
+                ws.client.emit("close", code, Buffer.from(message));
+            },
+            message: (ws, message, isBinary) => {
+                if(ws.client.isPaused) {
+                    ws.client.bufferIncomingMessage(message, isBinary);
+                    return;
+                }
+                if(this.options.allowSynchronousEvents) {
+                    ws.client.emit("message", ws.client.parseMessage(message, isBinary), isBinary);
+                } else {
+                    const msg = ws.client.parseMessage(message, isBinary);
+                    setImmediate(() => {
+                        ws.client.emit("message", msg, isBinary);
+                    });
+                }
+            },
+            ping: (ws, message) => {
+                if(this.options.allowSynchronousEvents) {
+                    ws.client.emit("ping", ws.client.parseMessage(message));
+                } else {
+                    const msg = ws.client.parseMessage(message);
+                    setImmediate(() => {
+                        ws.client.emit("ping", msg);
+                    });
+                }
+            },
+            pong: (ws, message) => {
+                if(this.options.allowSynchronousEvents) {
+                    ws.client.emit("pong", ws.client.parseMessage(message));
+                } else {
+                    const msg = ws.client.parseMessage(message);
+                    setImmediate(() => {
+                        ws.client.emit("pong", msg);
+                    });
+                }
+            },
+            dropped: (ws, message, isBinary) => {
+                ws.client.emit("dropped", ws.client.parseMessage(message), isBinary);
+            },
+            drain: (ws) => {
+                ws.client.emit("drain");
+            }
+        });
+    }
+
+    shouldHandle(req) {
+        return true;
+    }
+
+    address() {
+        const host = this.options.host ?? '::';
+        return { address: host, family: host.includes(':') ? 'IPv6' : 'IPv4', port: this.port };
+    }
+
+    listen(port, callback) {
+        if(!callback && typeof port === 'function') {
+            callback = port;
+            port = 0;
+        }
+        let fn = 'listen';
+        const onListening = (socket) => {
+            if(!socket) {
+                let err = new Error('Failed to listen on port ' + port + '. No permission or address already in use.');
+                throw err;
+            }
+            this.port = uWS.us_socket_local_port(socket);
+            this.emit("listening");
+            if(callback) callback(this.port);
+        }
+        let args = [];
+        if(typeof port !== 'number') {
+            if(!isNaN(Number(port))) {
+                port = Number(port);
+                args.push(port, onListening);
+                if(this.options.host) {
+                    args.unshift(this.options.host);
+                }
+            } else {
+                fn = 'listen_unix';
+                args.unshift(onListening, port);
+            }
+        } else {
+            args.push(port, onListening);
+            if(this.options.host) {
+                args.unshift(this.options.host);
+            }
+        }
+        this.listenCalled = true;
+        this.uwsApp[fn](...args);
+    }
+
+    close(callback) {
+        this.uwsApp.close();
+        process.nextTick(() => {
+            this.emit("close");
+            if(callback) callback();
+        });
+    }
+}
