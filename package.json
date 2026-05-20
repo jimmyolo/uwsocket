@@ -1,6 +1,6 @@
 {
   "name": "@jimmyolo/u-wsocket",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "☄️ WebSocket server, based on μWebSockets.js",
   "packageManager": "pnpm@11.1.2",
   "engines": {
