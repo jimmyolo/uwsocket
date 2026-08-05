@@ -1,5 +1,14 @@
+// `ws` ships no types, so this public import resolves through `@types/ws` — which
+// is why that package sits in `dependencies`, not `devDependencies` (issue #34).
+// It costs a pure-JS consumer one types-only install; the alternative is copying
+// the `ws.Server` members this surface merges in and letting them drift.
 import * as ws from 'ws';
-import * as uWS from 'uWebSockets.js';
+// `@jimmyolo/uws.js`, not `uWebSockets.js`: the latter is an optionalDependency,
+// so a skipped install degrades every type sourced from it to `any`. The fork's
+// declarations are the canonical ones for this package's public types — a
+// consumer who also installs upstream `uWebSockets.js` gets `TemplatedApp` from
+// a second declaration file, and the two only interoperate structurally.
+import * as uWS from '@jimmyolo/uws.js';
 import { ClientRequestArgs, IncomingMessage } from 'http';
 import { Duplex, DuplexOptions } from 'stream';
 
@@ -121,12 +130,14 @@ declare namespace WebSocket {
     static readonly CLOSING: 2;
     static readonly CLOSED: 3;
 
+    // `readonly Buffer[]` covers `ws.RawData`'s array member, which the "message"
+    // event yields under `binaryType = "fragments"`; send() concatenates it.
     send(
-      message: uWS.RecognizedString,
+      message: uWS.RecognizedString | readonly Buffer[],
       callback?: (err?: Error) => void,
     ): SendStatus;
     send(
-      message: uWS.RecognizedString,
+      message: uWS.RecognizedString | readonly Buffer[],
       options: SendOptions,
       callback?: (err?: Error) => void,
     ): SendStatus;
