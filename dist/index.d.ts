@@ -86,6 +86,16 @@ declare namespace WebSocket {
     idleTimeout?: number;
     maxLifetime?: number;
     closeOnBackpressureLimit?: boolean;
+    /**
+     * The maximum number of messages retained while a connection is paused.
+     * Exceeding it closes the connection with 1008
+     * `WS_ERR_TOO_MANY_BUFFERED_PARTS`. Defaults to 16384. A positive safe
+     * integer; anything else throws.
+     *
+     * `maxPayload` bounds the retained *bytes*, which is not a memory bound —
+     * see README § `maxBufferedMessages`.
+     */
+    maxBufferedMessages?: number;
     handleUpgrade?: (
       request: InstanceType<U>,
     ) => Promise<HandleUpgradeResult<T, U>> | HandleUpgradeResult<T, U>;
@@ -155,6 +165,30 @@ declare namespace WebSocket {
      * uWS responds to incoming pings with pong frames automatically.
      */
     pong(): void;
+
+    /**
+     * uWS-only
+     *  - subscribe
+     *  - unsubscribe
+     *  - isSubscribed
+     *  - publish
+     *  - cork
+     */
+    subscribe(topic: uWS.RecognizedString): boolean;
+    unsubscribe(topic: uWS.RecognizedString): boolean;
+    isSubscribed(topic: uWS.RecognizedString): boolean;
+    publish(
+      topic: uWS.RecognizedString,
+      message: uWS.RecognizedString,
+      isBinary?: boolean,
+      compress?: boolean,
+    ): boolean;
+
+    cork(fn: () => void): this;
+
+    /**
+     * uWS-only end
+     */
   }
 }
 
