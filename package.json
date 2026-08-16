@@ -1,6 +1,6 @@
 {
   "name": "@jimmyolo/u-wsocket",
-  "version": "2.3.5",
+  "version": "2.4.0",
   "description": "☄️ WebSocket server, based on μWebSockets.js",
   "engines": {
     "node": ">=22 <23 || >=24 <25"
@@ -32,7 +32,18 @@
     "test:fragments": "PORT=8890 node tests/fragments-echo.mjs",
     "test:buffered": "PORT=8892 node tests/buffered-messages.mjs",
     "test:pubsub": "PORT=8894 node tests/native-pubsub.mjs",
-    "test:all": "aube test && aube run test:fragments && aube run test:buffered && aube run test:pubsub && aube run test:types && aube run test:types:pack",
+    "test:ownership": "PORT=8896 node tests/close-ownership.mjs",
+    "test:upgrade-abort": "PORT=8898 node tests/upgrade-abort.mjs",
+    "test:reuse-port": "PORT=8900 node tests/reuse-port.mjs",
+    "test:cork": "PORT=8902 node tests/cork-dispatch.mjs",
+    "test:event-target": "node tests/event-target-drift.mjs",
+    "test:all": "aube test && aube run test:fragments && aube run test:buffered && aube run test:pubsub && aube run test:ownership && aube run test:upgrade-abort && aube run test:reuse-port && aube run test:cork && aube run test:event-target && aube run test:types && aube run test:types:pack",
+    "bench:profile": "node --expose-gc bench/latency.mjs",
+    "bench:throughput": "node bench/throughput.mjs",
+    "bench:k6": "sh bench/k6-load-test.sh",
+    "bench:uws": "sh bench/uws-load-test.sh",
+    "bench:load": "node bench/throughput.mjs && sh bench/k6-load-test.sh && sh bench/uws-load-test.sh",
+    "bench:cork": "node bench/cork.mjs",
     "build": "node build.js",
     "clean": "rm -rf build dist",
     "release": "npx release-it --verbose",
@@ -45,8 +56,7 @@
   "license": "Apache-2.0",
   "optionalDependencies": {
     "bufferutil": "4.1.0",
-    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.69.0",
-    "ultimate-ws": "2.0.10"
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.69.0"
   },
   "dependencies": {
     "@types/ws": "^8.18.1",

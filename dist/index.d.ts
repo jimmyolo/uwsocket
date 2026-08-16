@@ -1,35 +1,24 @@
-// `ws` ships no types, so this public import resolves through `@types/ws` — which
-// is why that package sits in `dependencies`, not `devDependencies` (issue #34).
-// It costs a pure-JS consumer one types-only install; the alternative is copying
-// the `ws.Server` members this surface merges in and letting them drift.
 import * as ws from 'ws';
-// `@jimmyolo/uws.js`, not `uWebSockets.js`: the latter is an optionalDependency,
-// so a skipped install degrades every type sourced from it to `any`. The fork's
-// declarations are the canonical ones for this package's public types — a
-// consumer who also installs upstream `uWebSockets.js` gets `TemplatedApp` from
-// a second declaration file, and the two only interoperate structurally.
 import * as uWS from '@jimmyolo/uws.js';
+
 import { ClientRequestArgs, IncomingMessage } from 'http';
 import { Duplex, DuplexOptions } from 'stream';
 
-// [Client] Class: WebSocket — re-exported from `ws` unchanged.
-//
-// Uses the interface + class declaration-merge pattern (same as
-// `WebSocketServer` below) so the static side does not trigger the
-// `TS2417` variance check against `ws.WebSocket`. The interface
-// declaration merges in `ws.WebSocket`'s instance side; the class
-// declaration stands alone for the static side so no inheritance
-// comparison happens between our narrower namespace (whose `Server`
-// re-export points at our `ServerOptions` with `server` narrowed to
-// `UwsAppHost | uWS.TemplatedApp`) and ws.WebSocket's static `Server`.
+/**
+ * [Client] Class: WebSocket — re-exported from `ws` unchanged.
+ *
+ * Declared as interface + class rather than `extends ws.WebSocket`, here and
+ * for `WebSocketServer` below. The interface merges in the instance side; the
+ * class stands alone for the static side, so no inheritance comparison happens
+ * between our narrower namespace and ws's — which would fail `TS2417`, since
+ * our `Server` re-export narrows `ServerOptions.server`.
+ *
+ * The cost is that the constructor overloads have to be spelled out: without
+ * them `new WebSocket('ws://...')` is a type error against a class TypeScript
+ * sees as parameterless.
+ */
 interface WebSocket extends ws.WebSocket {}
 declare class WebSocket {
-  // Constructor overloads mirror `@types/ws`'s `WebSocket` — the class
-  // declaration here doesn't `extends ws.WebSocket` (to avoid the
-  // static-side TS2417 variance check against our narrower namespace), so
-  // these signatures must be declared explicitly. Without them, consumers
-  // doing `new WebSocket('ws://...')` would hit a parameterless-constructor
-  // type error even though it works at runtime.
   constructor(address: null);
   constructor(
     address: string | URL,
@@ -48,7 +37,7 @@ declare class WebSocket {
 }
 
 declare namespace WebSocket {
-  // uWS WebSocket.send() return: 0 = dropped, 1 = backpressure, 2 = success
+  // uWS send() return: 0 = backpressure built up, 1 = success, 2 = dropped
   type SendStatus = 0 | 1 | 2;
 
   interface SendOptions {
@@ -56,17 +45,19 @@ declare namespace WebSocket {
     compress?: boolean;
   }
 
-  // Any object that exposes a uWS `uwsApp` (e.g. ultimate-ws wrappers).
+  // Any object exposing a uWS app, so a server can be handed one to mount on.
   interface UwsAppHost {
     uwsApp: uWS.TemplatedApp;
   }
 
   type UnsupportedOptions = 'noServer' | 'skipUTF8Validation' | 'backlog';
 
-  // Resolved value of `ServerOptions.handleUpgrade`:
-  //   - `false`           → abort the upgrade
-  //   - function          → invoked instead of emitting the "connection" event
-  //   - `void`/undefined  → continue normal connection flow
+  /**
+   * Resolved value of `ServerOptions.handleUpgrade`:
+   *   - `false`           abort the upgrade
+   *   - function          invoked instead of emitting the "connection" event
+   *   - `void`/undefined  continue normal connection flow
+   */
   type HandleUpgradeResult<
     T extends typeof WebSocketClient = typeof WebSocketClient,
     U extends typeof IncomingMessage = typeof IncomingMessage,
@@ -82,6 +73,7 @@ declare namespace WebSocket {
     perMessageDeflate?: boolean | uWS.CompressOptions | ws.PerMessageDeflateOptions;
     uwsOptions?: uWS.AppOptions;
     server?: UwsAppHost | uWS.TemplatedApp;
+    /** Defaults to `min(max(2 * maxPayload, 1mb), 64mb)`. */
     maxBackpressure?: number;
     idleTimeout?: number;
     maxLifetime?: number;
@@ -96,15 +88,29 @@ declare namespace WebSocket {
      * see README § `maxBufferedMessages`.
      */
     maxBufferedMessages?: number;
+    /**
+     * Bind with `SO_REUSEPORT`, letting several servers share one port and the
+     * kernel spread the connections across them. Off by default, so a second
+     * bind fails with `EADDRINUSE` as it does under `ws`.
+     */
+    reusePort?: boolean;
+    /**
+     * Run the `'message'` handler inside a cork, so every `send()` it makes
+     * leaves as one write instead of one each. On by default, and `ws` has no
+     * equivalent either way: under the default `allowSynchronousEvents: true`
+     * it changes nothing, since uWS's own callback cork already covers the
+     * handler, and with that option off it is worth up to 92% of the server's
+     * per-frame CPU. Set it to `false` for a handler that must see its bytes
+     * leave at each `send()` rather than when it returns. Covers a message
+     * arriving from the socket, not the drain a `resume()` performs — see
+     * README § `corkDispatch`.
+     */
+    corkDispatch?: boolean;
     handleUpgrade?: (
       request: InstanceType<U>,
     ) => Promise<HandleUpgradeResult<T, U>> | HandleUpgradeResult<T, U>;
   }
 
-  // Class + interface merge: class owns the static side (no `extends ws.WebSocketServer`
-  // here, which avoids the static-side variance check between our narrower
-  // `ServerOptions` and ws's), while the interface declaration-merges in all
-  // instance members from `ws.WebSocketServer`.
   interface WebSocketServer<
     T extends typeof WebSocketClient = typeof WebSocketClient,
     U extends typeof IncomingMessage = typeof IncomingMessage,
@@ -123,7 +129,6 @@ declare namespace WebSocket {
 
   const Server: typeof WebSocketServer;
 
-  // Re-exports from `ws` (client-side classes are not modified by u-wsocket).
   const WebSocket: typeof ws.WebSocket;
   interface WebSocket extends ws.WebSocket {}
   interface ClientOptions extends ws.ClientOptions {}
@@ -142,20 +147,23 @@ declare namespace WebSocket {
 
     // `readonly Buffer[]` covers `ws.RawData`'s array member, which the "message"
     // event yields under `binaryType = "fragments"`; send() concatenates it.
+    // `number` matches `@types/ws`'s BufferLike: it is stringified before framing.
+    // `undefined` is the return on a non-OPEN socket, where nothing is framed and
+    // the error goes to the callback instead.
     send(
-      message: uWS.RecognizedString | readonly Buffer[],
+      message: uWS.RecognizedString | readonly Buffer[] | number,
       callback?: (err?: Error) => void,
-    ): SendStatus;
+    ): SendStatus | undefined;
     send(
-      message: uWS.RecognizedString | readonly Buffer[],
+      message: uWS.RecognizedString | readonly Buffer[] | number,
       options: SendOptions,
       callback?: (err?: Error) => void,
-    ): SendStatus;
+    ): SendStatus | undefined;
 
     ping(cb?: (err?: Error) => void): void;
-    ping(data: uWS.RecognizedString, cb?: (err?: Error) => void): void;
+    ping(data: uWS.RecognizedString | number, cb?: (err?: Error) => void): void;
     ping(
-      data: uWS.RecognizedString,
+      data: uWS.RecognizedString | number,
       mask: boolean,
       cb?: (err?: Error) => void,
     ): void;
