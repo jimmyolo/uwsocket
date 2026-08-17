@@ -6,13 +6,13 @@
 ### Installation
 
 ```bash
-npm install jimmyolo/uwsocket#v2.4.0
+npm install jimmyolo/uwsocket#v2.4.1
 ```
 
 ```json
 {
   "dependencies": {
-    "@jimmyolo/u-wsocket": "github:jimmyolo/uwsocket#v2.4.0"
+    "@jimmyolo/u-wsocket": "github:jimmyolo/uwsocket#v2.4.1"
   }
 }
 ```
