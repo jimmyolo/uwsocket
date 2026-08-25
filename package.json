@@ -1,6 +1,6 @@
 {
   "name": "@jimmyolo/u-wsocket",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "description": "☄️ WebSocket server, based on μWebSockets.js",
   "engines": {
     "node": ">=22 <23 || >=24 <25"
