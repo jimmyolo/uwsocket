@@ -1,23 +1,36 @@
 {
   "name": "@jimmyolo/u-wsocket",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "☄️ WebSocket server, based on μWebSockets.js",
   "engines": {
     "node": ">=22 <23 || >=24 <25"
   },
   "files": [
     "dist",
-    "src/index.d.ts"
+    "src/index.d.ts",
+    "src/sse/index.d.ts"
   ],
   "main": "dist/index.js",
   "exports": {
-    "import": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.mjs"
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     },
-    "require": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+    "./sse": {
+      "import": {
+        "types": "./dist/sse.d.ts",
+        "default": "./dist/sse.mjs"
+      },
+      "require": {
+        "types": "./dist/sse.d.ts",
+        "default": "./dist/sse.js"
+      }
     }
   },
   "scripts": {
@@ -26,7 +39,13 @@
     "ai:status": "codegraph status",
     "ai:sync": "codegraph sync",
     "ai:reindex": "codegraph index --force",
-    "test": "PORT=8888 node tests",
+    "check": "aubx @biomejs/biome check --no-errors-on-unmatched",
+    "lint": "aube run check -- --linter-enabled=true --formatter-enabled=false",
+    "lint:fix": "aube run lint -- --write",
+    "format": "aube run check -- --linter-enabled=false --formatter-enabled=true",
+    "format:fix": "aube run format -- --write",
+    "test": "node tests/run-all.mjs",
+    "test:dual-run": "PORT=8888 node tests",
     "test:types": "tsd --typings src/index.d.ts",
     "test:types:pack": "node tests/types-packaging.mjs",
     "test:fragments": "PORT=8890 node tests/fragments-echo.mjs",
@@ -37,13 +56,17 @@
     "test:reuse-port": "PORT=8900 node tests/reuse-port.mjs",
     "test:cork": "PORT=8902 node tests/cork-dispatch.mjs",
     "test:event-target": "node tests/event-target-drift.mjs",
-    "test:all": "aube test && aube run test:fragments && aube run test:buffered && aube run test:pubsub && aube run test:ownership && aube run test:upgrade-abort && aube run test:reuse-port && aube run test:cork && aube run test:event-target && aube run test:types && aube run test:types:pack",
+    "test:unhandled-error": "PORT=8908 node tests/unhandled-error.mjs",
+    "test:sse": "PORT=8904 node tests/sse.mjs",
+    "test:sse:defer": "PORT=8910 node tests/sse-defer-flush.mjs",
+    "test:sse:abort": "node tests/sse-abort-guards.mjs",
     "bench:profile": "node --expose-gc bench/latency.mjs",
     "bench:throughput": "node bench/throughput.mjs",
     "bench:k6": "sh bench/k6-load-test.sh",
     "bench:uws": "sh bench/uws-load-test.sh",
     "bench:load": "node bench/throughput.mjs && sh bench/k6-load-test.sh && sh bench/uws-load-test.sh",
     "bench:cork": "node bench/cork.mjs",
+    "bench:sse": "node bench/sse.mjs",
     "build": "node build.js",
     "clean": "rm -rf build dist",
     "release": "npx release-it --verbose",
@@ -60,9 +83,12 @@
   },
   "dependencies": {
     "@types/ws": "^8.18.1",
-    "tseep": "1.3.1",
+    "better-sse": "0.16.1",
     "ws": "~8.21.3",
     "@jimmyolo/uws.js": "github:jimmyolo/uws.js#v20.69.0-alma.1"
+  },
+  "lint-staged": {
+    "src/**/*.{js,mjs,ts}": "aubx @biomejs/biome check --write --no-errors-on-unmatched"
   },
   "tsd": {
     "directory": "test-d",
@@ -73,10 +99,12 @@
       "esModuleInterop": true,
       "strict": true,
       "skipLibCheck": true,
-      "baseUrl": ".",
       "paths": {
         "@jimmyolo/u-wsocket": [
           "./src/index.d.ts"
+        ],
+        "@jimmyolo/u-wsocket/sse": [
+          "./src/sse/index.d.ts"
         ]
       }
     }

@@ -1,8 +1,8 @@
-import * as ws from 'ws';
-import * as uWS from '@jimmyolo/uws.js';
+import {ClientRequestArgs, IncomingMessage} from 'node:http';
+import {Duplex, DuplexOptions} from 'node:stream';
 
-import { ClientRequestArgs, IncomingMessage } from 'http';
-import { Duplex, DuplexOptions } from 'stream';
+import * as uWS from '@jimmyolo/uws.js';
+import * as ws from 'ws';
 
 /**
  * [Client] Class: WebSocket — re-exported from `ws` unchanged.
@@ -17,6 +17,7 @@ import { Duplex, DuplexOptions } from 'stream';
  * them `new WebSocket('ws://...')` is a type error against a class TypeScript
  * sees as parameterless.
  */
+// biome-ignore lint/correctness/noUnusedVariables: merges with the class below, which is what carries the constructor overloads; biome reads the pair as one unused interface
 interface WebSocket extends ws.WebSocket {}
 declare class WebSocket {
   constructor(address: null);
@@ -64,13 +65,20 @@ declare namespace WebSocket {
   > =
     | false
     | ((client: InstanceType<T>, request: InstanceType<U>) => void)
+    // biome-ignore lint/suspicious/noConfusingVoidType: the union is the public contract, and `void` is what a handler returning nothing produces; `undefined` would force callers to write `return undefined`
     | void;
 
   interface ServerOptions<
     T extends typeof WebSocketClient = typeof WebSocketClient,
     U extends typeof IncomingMessage = typeof IncomingMessage,
-  > extends Omit<ws.ServerOptions<T, U>, UnsupportedOptions | 'server' | 'perMessageDeflate'> {
-    perMessageDeflate?: boolean | uWS.CompressOptions | ws.PerMessageDeflateOptions;
+  > extends Omit<
+      ws.ServerOptions<T, U>,
+      UnsupportedOptions | 'server' | 'perMessageDeflate'
+    > {
+    perMessageDeflate?:
+      | boolean
+      | uWS.CompressOptions
+      | ws.PerMessageDeflateOptions;
     uwsOptions?: uWS.AppOptions;
     server?: UwsAppHost | uWS.TemplatedApp;
     /** Defaults to `min(max(2 * maxPayload, 1mb), 64mb)`. */
