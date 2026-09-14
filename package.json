@@ -1,9 +1,9 @@
 {
   "name": "@jimmyolo/u-wsocket",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "☄️ WebSocket server, based on μWebSockets.js",
   "engines": {
-    "node": ">=22 <23 || >=24 <25"
+    "node": ">=22"
   },
   "files": [
     "dist",
@@ -83,13 +83,13 @@
   "license": "Apache-2.0",
   "optionalDependencies": {
     "bufferutil": "4.1.0",
-    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.69.0"
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.70.0"
   },
   "dependencies": {
     "@types/ws": "^8.18.1",
     "better-sse": "0.16.1",
     "ws": "~8.21.3",
-    "@jimmyolo/uws.js": "github:jimmyolo/uws.js#v20.69.0-alma.1"
+    "@jimmyolo/uws.js": "github:jimmyolo/uws.js#v20.70.0-alma.1"
   },
   "lint-staged": {
     "src/**/*.{js,mjs,ts}": "aubx @biomejs/biome check --write --no-errors-on-unmatched"
