@@ -1,4 +1,5 @@
 import {ClientRequestArgs, IncomingMessage} from 'node:http';
+import {AddressInfo} from 'node:net';
 import {Duplex, DuplexOptions} from 'node:stream';
 
 import * as uWS from '@jimmyolo/uws.js';
@@ -55,7 +56,9 @@ declare namespace WebSocket {
 
   /**
    * Resolved value of `ServerOptions.handleUpgrade`:
-   *   - `false`           abort the upgrade
+   *   - `false`           refuse the upgrade — answered 401 unless the handler
+   *                       finished the response itself; only strict `false`,
+   *                       any other falsy value continues; see README § handleUpgrade
    *   - function          invoked instead of emitting the "connection" event
    *   - `void`/undefined  continue normal connection flow
    */
@@ -73,8 +76,10 @@ declare namespace WebSocket {
     U extends typeof IncomingMessage = typeof IncomingMessage,
   > extends Omit<
       ws.ServerOptions<T, U>,
-      UnsupportedOptions | 'server' | 'perMessageDeflate'
+      UnsupportedOptions | 'server' | 'perMessageDeflate' | 'port'
     > {
+    /** A number binds TCP; a string is a socket path, as `net.Server#listen`. */
+    port?: number | string;
     perMessageDeflate?:
       | boolean
       | uWS.CompressOptions
@@ -114,8 +119,10 @@ declare namespace WebSocket {
      * README § `corkDispatch`.
      */
     corkDispatch?: boolean;
+    // `req` / `res` are the μWebSockets.js pair the shim exposes on every
+    // request — the route to a refusal status other than 401.
     handleUpgrade?: (
-      request: InstanceType<U>,
+      request: InstanceType<U> & {req: uWS.HttpRequest; res: uWS.HttpResponse},
     ) => Promise<HandleUpgradeResult<T, U>> | HandleUpgradeResult<T, U>;
   }
 
@@ -124,6 +131,13 @@ declare namespace WebSocket {
     U extends typeof IncomingMessage = typeof IncomingMessage,
   > extends ws.Server<T, U> {
     readonly uwsApp: uWS.TemplatedApp;
+    /**
+     * `null` before `'listening'`, after `close()`, and always on the
+     * `{ server }` form. The socket path as a `string` on a socket-path
+     * bind, as `net.Server#address()` reports a pipe; otherwise
+     * `AddressInfo` — see README § Options, the `{ port }` column.
+     */
+    address(): AddressInfo | string | null;
     // Not exposed as a method — pass `handleUpgrade` via ServerOptions instead.
     handleUpgrade: never;
   }
