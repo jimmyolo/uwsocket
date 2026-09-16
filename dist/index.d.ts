@@ -132,10 +132,11 @@ declare namespace WebSocket {
   > extends ws.Server<T, U> {
     readonly uwsApp: uWS.TemplatedApp;
     /**
-     * `null` before `'listening'`, after `close()`, and always on the
-     * `{ server }` form. The socket path as a `string` on a socket-path
-     * bind, as `net.Server#address()` reports a pipe; otherwise
-     * `AddressInfo` — see README § Options, the `{ port }` column.
+     * On a socket-path bind, the path `string` from the bind attempt on,
+     * even when it is refused, as `net.Server#address()` reports a pipe; on
+     * a port bind, `AddressInfo` from `'listening'` on. `null` before that,
+     * after `close()`, and always on the `{ server }` form — see README
+     * § Options, the `{ port }` column.
      */
     address(): AddressInfo | string | null;
     // Not exposed as a method — pass `handleUpgrade` via ServerOptions instead.
