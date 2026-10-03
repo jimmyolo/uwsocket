@@ -60,7 +60,7 @@ export interface SseOptions<State = Record<string, unknown>>
    * `setImmediate` — or as soon as 64 KiB is queued, whichever comes first. Off
    * by default, because it delays every event by an event-loop turn. A
    * `maxBufferedBytes` below 64 KiB lowers that threshold to itself, so the cap
-   * still bounds what one connection holds. See README § `deferFlush`.
+   * still bounds what one connection holds. See docs/sse.md § `deferFlush`.
    */
   deferFlush?: boolean;
 }

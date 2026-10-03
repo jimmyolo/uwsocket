@@ -97,8 +97,7 @@ declare namespace WebSocket {
      * `WS_ERR_TOO_MANY_BUFFERED_PARTS`. Defaults to 16384. A positive safe
      * integer; anything else throws.
      *
-     * `maxPayload` bounds the retained *bytes*, which is not a memory bound —
-     * see README § `maxBufferedMessages`.
+     * `maxPayload` bounds the retained *bytes*, which is not a memory bound.
      */
     maxBufferedMessages?: number;
     /**
@@ -115,8 +114,7 @@ declare namespace WebSocket {
      * handler, and with that option off it is worth up to 92% of the server's
      * per-frame CPU. Set it to `false` for a handler that must see its bytes
      * leave at each `send()` rather than when it returns. Covers a message
-     * arriving from the socket, not the drain a `resume()` performs — see
-     * README § `corkDispatch`.
+     * arriving from the socket, not the drain a `resume()` performs.
      */
     corkDispatch?: boolean;
     // `req` / `res` are the μWebSockets.js pair the shim exposes on every
@@ -136,7 +134,7 @@ declare namespace WebSocket {
      * even when it is refused, as `net.Server#address()` reports a pipe; on
      * a port bind, `AddressInfo` from `'listening'` on. `null` before that,
      * after `close()`, and always on the `{ server }` form — see README
-     * § Options, the `{ port }` column.
+     * § Known Limitation, Binding.
      */
     address(): AddressInfo | string | null;
     // Not exposed as a method — pass `handleUpgrade` via ServerOptions instead.

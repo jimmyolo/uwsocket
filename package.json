@@ -1,6 +1,6 @@
 {
   "name": "@jimmyolo/u-wsocket",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "description": "☄️ WebSocket server, based on μWebSockets.js",
   "engines": {
     "node": ">=22"
@@ -59,11 +59,13 @@
     "test:path-precedence": "PORT=8912 node tests/path-precedence.mjs",
     "test:listen-unix-long": "node tests/listen-unix-long.mjs",
     "test:event-target": "node tests/event-target-drift.mjs",
+    "test:docs": "node tests/docs-drift.mjs",
     "test:unhandled-error": "PORT=8908 node tests/unhandled-error.mjs",
     "test:publish-stash": "node tests/publish-stash-guard.mjs",
     "test:sse": "PORT=8904 node tests/sse.mjs",
     "test:sse:defer": "PORT=8910 node tests/sse-defer-flush.mjs",
     "test:sse:abort": "node tests/sse-abort-guards.mjs",
+    "guard:ws": "node tests/run-all.mjs event-target upgrade-refuse tests/tests/client/close-invalid-args.js tests/tests/client/close-valid-edge-codes.js tests/tests/client/close-ignored-reason.js",
     "bench:profile": "node --expose-gc bench/latency.mjs",
     "bench:throughput": "node bench/throughput.mjs",
     "bench:k6": "sh bench/k6-load-test.sh",
@@ -86,9 +88,9 @@
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.71.0"
   },
   "dependencies": {
-    "@types/ws": "^8.18.1",
+    "@types/ws": "^8.18.2",
     "better-sse": "0.16.1",
-    "ws": "~8.21.3",
+    "ws": "~8.22.0",
     "@jimmyolo/uws.js": "github:jimmyolo/uws.js#v20.71.0-alma.1"
   },
   "lint-staged": {
