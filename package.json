@@ -1,6 +1,6 @@
 {
   "name": "@jimmyolo/u-wsocket",
-  "version": "2.7.1",
+  "version": "2.7.2",
   "description": "☄️ WebSocket server, based on μWebSockets.js",
   "engines": {
     "node": ">=22"
@@ -66,10 +66,13 @@
     "test:sse:defer": "PORT=8910 node tests/sse-defer-flush.mjs",
     "test:sse:abort": "node tests/sse-abort-guards.mjs",
     "guard:ws": "node tests/run-all.mjs event-target upgrade-refuse tests/tests/client/close-invalid-args.js tests/tests/client/close-valid-edge-codes.js tests/tests/client/close-ignored-reason.js",
+    "bench:install": "aube -C bench/third-party install --frozen-lockfile",
+    "bench:record": "bash bench/record.sh",
     "bench:profile": "node --expose-gc bench/latency.mjs",
     "bench:throughput": "node bench/throughput.mjs",
     "bench:k6": "sh bench/k6-load-test.sh",
     "bench:uws": "sh bench/uws-load-test.sh",
+    "bench:quick": "ARMS='ws uws u-wsocket ultimate-ws' sh bench/uws-load-test.sh",
     "bench:load": "node bench/throughput.mjs && sh bench/k6-load-test.sh && sh bench/uws-load-test.sh",
     "bench:cork": "node bench/cork.mjs",
     "bench:sse": "node bench/sse.mjs",
