@@ -101,6 +101,12 @@ declare namespace WebSocket {
      */
     maxBufferedMessages?: number;
     /**
+     * `ws` 8.23.0's limit on unwritten automatic pongs: a ping past it
+     * terminates the connection. Defaults to 60; `0` turns it off. Missing
+     * from `@types/ws`'s `ServerOptions`. See README § Known Limitation.
+     */
+    maxPendingAutoPongs?: number;
+    /**
      * Bind with `SO_REUSEPORT`, letting several servers share one port and the
      * kernel spread the connections across them. Off by default, so a second
      * bind fails with `EADDRINUSE` as it does under `ws`.
