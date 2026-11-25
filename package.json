@@ -1,9 +1,9 @@
 {
   "name": "@jimmyolo/u-wsocket",
-  "version": "2.8.0",
+  "version": "2.8.1",
   "description": "☄️ WebSocket server, based on μWebSockets.js",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "files": [
     "dist",
@@ -32,55 +32,6 @@
         "default": "./dist/sse.js"
       }
     }
-  },
-  "scripts": {
-    "prepare": "npx husky",
-    "ai:init": "codegraph init -i",
-    "ai:status": "codegraph status",
-    "ai:sync": "codegraph sync",
-    "ai:reindex": "codegraph index --force",
-    "check": "aubx @biomejs/biome check --no-errors-on-unmatched",
-    "lint": "aube run check -- --linter-enabled=true --formatter-enabled=false",
-    "lint:fix": "aube run lint -- --write",
-    "format": "aube run check -- --linter-enabled=false --formatter-enabled=true",
-    "format:fix": "aube run format -- --write",
-    "test": "node tests/run-all.mjs",
-    "test:dual-run": "PORT=8888 node tests",
-    "test:types": "tsd --typings src/index.d.ts",
-    "test:types:pack": "node tests/types-packaging.mjs",
-    "test:fragments": "PORT=8890 node tests/fragments-echo.mjs",
-    "test:buffered": "PORT=8892 node tests/buffered-messages.mjs",
-    "test:pubsub": "PORT=8894 node tests/native-pubsub.mjs",
-    "test:ownership": "PORT=8896 node tests/close-ownership.mjs",
-    "test:upgrade-abort": "PORT=8898 node tests/upgrade-abort.mjs",
-    "test:upgrade-refuse": "PORT=8914 node tests/upgrade-refuse.mjs",
-    "test:dropped-close": "PORT=8916 node tests/dropped-close.mjs",
-    "test:reuse-port": "PORT=8900 node tests/reuse-port.mjs",
-    "test:cork": "PORT=8902 node tests/cork-dispatch.mjs",
-    "test:path-precedence": "PORT=8912 node tests/path-precedence.mjs",
-    "test:listen-unix-long": "node tests/listen-unix-long.mjs",
-    "test:event-target": "node tests/event-target-drift.mjs",
-    "test:docs": "node tests/docs-drift.mjs",
-    "test:unhandled-error": "PORT=8908 node tests/unhandled-error.mjs",
-    "test:publish-stash": "node tests/publish-stash-guard.mjs",
-    "test:sse": "PORT=8904 node tests/sse.mjs",
-    "test:sse:defer": "PORT=8910 node tests/sse-defer-flush.mjs",
-    "test:sse:abort": "node tests/sse-abort-guards.mjs",
-    "guard:ws": "node tests/run-all.mjs event-target upgrade-refuse tests/tests/client/close-invalid-args.js tests/tests/client/close-valid-edge-codes.js tests/tests/client/close-ignored-reason.js",
-    "bench:install": "aube -C bench/third-party install --frozen-lockfile",
-    "bench:record": "bash bench/record.sh",
-    "bench:profile": "node --expose-gc bench/latency.mjs",
-    "bench:throughput": "node bench/throughput.mjs",
-    "bench:k6": "sh bench/k6-load-test.sh",
-    "bench:uws": "sh bench/uws-load-test.sh",
-    "bench:quick": "ARMS='ws uws u-wsocket ultimate-ws' sh bench/uws-load-test.sh",
-    "bench:load": "node bench/throughput.mjs && sh bench/k6-load-test.sh && sh bench/uws-load-test.sh",
-    "bench:cork": "node bench/cork.mjs",
-    "bench:sse": "node bench/sse.mjs",
-    "build": "node build.js",
-    "clean": "rm -rf build dist",
-    "release": "npx release-it --verbose",
-    "release:dry": "aube run release -- --dry-run"
   },
   "repository": {
     "type": "git",
